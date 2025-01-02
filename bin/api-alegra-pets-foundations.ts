@@ -1,20 +1,47 @@
 #!/usr/bin/env node
-import * as cdk from 'aws-cdk-lib';
-import { ApiAlegraPetsFoundationsStack } from '../lib/api-alegra-pets-foundations-stack';
+import * as cdk from "aws-cdk-lib";
+import * as dotenv from "dotenv";
+import { SharedInfraStack } from "../lib/shared-infra-stack";
+import { FoundationsInfraStack } from "../lib/foundations-infra-stack";
+import { PetsInfraStack } from "../lib/pets-infra-stack";
+import { UsersInfraStack } from "../lib/users-infra-stack";
+
+dotenv.config();
 
 const app = new cdk.App();
-new ApiAlegraPetsFoundationsStack(app, 'ApiAlegraPetsFoundationsStack', {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
+const resourcePrefix = process.env.CDK_RESOURCE_PREFIX ?? "api-alegra";
+const environmentName = process.env.CDK_DEFAULT_ENVIRONMENT ?? "test";
+const SNSEmailSubscription = process.env.SNS_EMAIL_SUBSCRIPTION;
+const commonProps = {
+  env: {
+    account: process.env.CDK_DEFAULT_ACCOUNT,
+    region: process.env.CDK_DEFAULT_REGION,
+  },
+  resourcePrefix: resourcePrefix,
+  environmentName,
+};
 
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-  // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
+new SharedInfraStack(app, `${resourcePrefix}-infra-shared-${environmentName}`, {
+  ...commonProps,
+  description: "Shared infrastructure for Alegra Pets API",
+});
 
-  /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
-  // env: { account: '123456789012', region: 'us-east-1' },
+new FoundationsInfraStack(
+  app,
+  `${resourcePrefix}-infra-foundations-${environmentName}`,
+  {
+    ...commonProps,
+    description: "Foundations Infrastructure for Alegra Pets API",
+  }
+);
 
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
+new PetsInfraStack(app, `${resourcePrefix}-infra-pets-${environmentName}`, {
+  ...commonProps,
+  description: "Pets Infrastructure for Alegra Pets API",
+  SNSEmailSubscription,
+});
+
+new UsersInfraStack(app, `${resourcePrefix}-infra-users-${environmentName}`, {
+  ...commonProps,
+  description: "Users Infrastructure for Alegra Pets API",
 });
